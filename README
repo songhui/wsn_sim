@@ -1,0 +1,4 @@
+A simulator to test the clonal plasticity algorithm for self-adaptation in the
+context of a wireless sensor network. For the purpose of this simulation, the
+wsn doesn't need to be authentic, rather it should just exhibit essential
+behaviour. We're trying to test clonal plasticity, not WSNs.
