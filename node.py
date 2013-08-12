@@ -8,26 +8,19 @@ class Node(object):
     its parent, incoming data buffer per query, and an outgoing data buffer
     per query
     """
-    def __init__(self, env, name, queries,
+    def __init__(self, name,
                  computing_ability=config.COMPUTATIONAL_POWER,
                  battery_power=config.BATTERY_POWER
                  ):
-        self.env = env
         self.name = name
-        self.queries = queries
         self.computing_ability = computing_ability
         self.battery_power = battery_power
+        self.neighbours = []
 
-    def add_query(self, query):
-        self.queries += query
-
-    def remove_query(self, query):
-        self.queries[:] = [qry for qry in self.queries
-                           if not qry.name == query.name]
-
-    def execute_queries(self):
-        for query in self.queries:
-            self.execute(query)
+    def addNeighbour(self, neighbour):
+        self.neighbours.append(neighbour)
+        
+    
 
     def execute(self, query):
         """

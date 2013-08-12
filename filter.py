@@ -3,15 +3,12 @@ import config
 
 class Filter(object):
 
-    def __init__(self, env, rank=0,
-                 selectivity_factor=1,
-                 computational_cost=config.COMPUTATIONAL_COST):
-        self.env = env
-        self.rank = rank
-        self.selectivity_factor = selectivity_factor
+    def __init__(self,
+                 computational_cost=config.COMPUTATIONAL_COST
+                 ):
         self.computational_cost = computational_cost
 
-    def execute():
+    def execute(self):
         """
         This method executes the filter upon the node that it is currently
         running on. It decreases its host node's power availability, consumes
