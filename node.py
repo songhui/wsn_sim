@@ -1,5 +1,5 @@
 import config
-
+from filter import *
 
 class Node(object):
     """The Node exemplifies a logical node in a WSN. It can accept
@@ -15,10 +15,16 @@ class Node(object):
         self.name = name
         self.computing_ability = computing_ability
         self.battery_power = battery_power
-        self.neighbours = []
+        self.neighbours = set()
+        self.filters = set()
 
     def addNeighbour(self, neighbour):
-        self.neighbours.append(neighbour)
+        self.neighbours.add(neighbour)
+        neighbour.neighbours.add(self)
+        
+    def removeNeighbour(self,neighbour):
+        self.neighbours.remove(neighbour)
+        neighbour.neighbours.remove(self)
         
     
 
