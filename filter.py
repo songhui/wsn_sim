@@ -10,6 +10,7 @@ class Filter():
                  computational_cost=config.COMPUTATIONAL_COST,
                  reportTo = None
                  ):
+        self.dirty = False  # whether this filter got data processed or not
         self.computational_cost = computational_cost
         self.reportTo = None        
         self.getDataFrom = set()  
@@ -42,6 +43,7 @@ class Filter():
     def filter(self, data, fromFilter):
         if not fromFilter in self.getDataFrom:
             return None
+        self.dirty = True
         return self._filter(data)
         
     def _filter(self, data):  #default impl, do not change data at all
@@ -78,6 +80,8 @@ class Sink(Filter):
 #             print "%s is outputing '%s' at %5.1f" %( self.name, self.data, now())
             
 
+
+        
         
 
 

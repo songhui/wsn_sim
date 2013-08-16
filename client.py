@@ -1,5 +1,16 @@
 from filter import *
 
+class Timer(Process):
+    
+    def timeout(self):
+        while True:
+            yield hold, self, 30
+            for n in nodes:
+                n.rechargeEvent.signal()
+        
+    
+
+
 initialize()
 
 n1 = Node("n1")
@@ -28,7 +39,11 @@ nodes = [n1,n2,n3]
 for n in nodes:
     n.activateMe()
     
+    
+timer = Timer()
+activate(timer, timer.timeout())
+    
 simulate(until = 100)
 
 
- 
+print [n.battery_power for n in nodes]

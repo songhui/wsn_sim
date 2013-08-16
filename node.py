@@ -10,15 +10,19 @@ class Node(Process):
     """
     def __init__(self, name,
                  computing_ability=config.COMPUTATIONAL_POWER,
-                 battery_power=config.BATTERY_POWER
+                 battery_power=config.BATTERY_POWER,
+                 energy_cost_rate = config.DEFAUT_ENERGY_COST_RATE
                  ):
         Process.__init__(self)
         self.name = name
         self.computing_ability = computing_ability
         self.battery_power = battery_power
+        self.energy_cost_rate = energy_cost_rate
         self.neighbours = set()
         self.filters = set()
         self.event = FireNodeEvent(name)
+        self.rechargeEvent = SimEvent('recharge')
+        self.transToken = Resource(capacity = 1, qType = FIFO, name = ('r_%s' % self.name))
 
     def addNeighbour(self, neighbour):
         self.neighbours.add(neighbour)
@@ -28,7 +32,8 @@ class Node(Process):
         self.neighbours.remove(neighbour)
         neighbour.neighbours.remove(self)
         
-    
+    def consumePower(self, volumn):
+        self.battery_power = self.battery_power - self.energy_cost_rate * volumn
 
     def execute(self):
         """
@@ -43,14 +48,20 @@ class Node(Process):
         """
         while True:
             yield waitevent, self, self.event
+            if self.battery_power <= 0:
+                yield waitevent, self, self.rechargeEvent
+                self.battery_power = 100  # let's suppose always fully recharge
+                continue
             for filter in self.filters:
-                newdata = filter.filter(self.event.data, self.event.fromFilter)  
+                data = self.event.data
+                newdata = filter.filter(data, self.event.fromFilter)  
                 if newdata == None: continue
                 for n in (self.neighbours | set([self])):
-                    transferer = getAnIdleTransferer()
-                    transferer.setup(currentNode = self, targetNode = n, currentFilter = filter, data = newdata)
-                    reactivate(transferer)
-                     
+                    if any((filter in f.getDataFrom) for f in n.filters):
+                        transferer = getAnIdleTransferer()
+                        transferer.setup(currentNode = self, targetNode = n, currentFilter = filter, data = newdata)
+                        reactivate(transferer)
+                   
     def activateMe(self):
         activate(self, self.execute())
 
@@ -72,7 +83,7 @@ class SensorSource(Process):
     def collectData(self):
         while True:
             yield hold, self, self.interval
-            self.host.event.data = "A data born at %5.1f" % now()
+            self.host.event.data = SensedData(name = ('e_%s' % self.host.name), volumn = 10)
             self.host.event.fromFilter = None
             #print self.host.data
             self.host.event.signal()
@@ -81,9 +92,13 @@ class SensorSource(Process):
         activate(self,self.collectData())
 
 class Transferer(Process):
+    number = 0
     def __init__(self):
         Process.__init__(self)
         self.data = None
+        self.isIdle = True
+        self.name = Transferer.number
+        Transferer.number = Transferer.number +1
     
     def setup(self, currentNode, targetNode, currentFilter, data):
         self.data = data
@@ -93,17 +108,22 @@ class Transferer(Process):
         
     def transf(self):
         while True:
-            yield passivate, self
-            if self.targetNode == self.currentNode:
+            self.isIdle = False
+            if self.targetNode == self.currentNode:  # internal transfer
                 yield hold, self, 0.1
                 self.targetNode.event.data = self.data
                 self.targetNode.event.fromFilter = self.currentFilter
                 self.targetNode.event.signal()
-            if self.targetNode in self.currentNode.neighbours: 
-                yield hold, self, uniform(1,2)
+            if self.targetNode in self.currentNode.neighbours: #external transfer     
+                yield request, self, self.currentNode.transToken           
+                yield hold, self, uniform(1,2)                
                 self.targetNode.event.data = self.data
                 self.targetNode.event.fromFilter = self.currentFilter
+                self.currentNode.consumePower(self.data.volumn)
                 self.targetNode.event.signal()
+                yield release, self, self.currentNode.transToken
+            self.isIdle = True   
+            yield passivate, self
     
     def activateMe(self):
         activate(self,self.transf())           
@@ -113,10 +133,23 @@ transfererPool = []
 def getAnIdleTransferer():
     #print 'pool size: %d' % len(transfererPool)
     try:
-        trans = next(t for t in transfererPool if t.passive() )
+        trans = next(t for t in transfererPool if t.isIdle )
+        trans.isIdle = False
         return trans
     except StopIteration:
         trans = Transferer()
         trans.activateMe()
         transfererPool.append(trans)
+        trans.isIdle = False
         return trans 
+    
+    
+class SensedData(object):
+    
+    def __init__(self, name = 'some sensor', volumn = 0):
+        self.name = name
+        self.volumn = volumn
+        self.bornTime = now()
+        
+    def __str__(self):
+        return '<%s, born at %5.1f>' % (self.name, self.bornTime)
