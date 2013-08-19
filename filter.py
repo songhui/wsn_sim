@@ -4,6 +4,11 @@ from random import uniform
 from node import *
 
 class Filter():
+    
+    '''
+    Filters only transform the data, 
+    (later) should consume some energy.
+    '''
 
     def __init__(self,
                  name,
@@ -49,20 +54,7 @@ class Filter():
     def _filter(self, data):  #default impl, do not change data at all
         return data
 
-    def execute(self):
-        """
-        This method executes the filter upon the node that it is currently
-        running on. It decreases its host node's power availability, consumes
-        the outgoing data buffer
-        """
-#         while True:
-#             yield passivate, self            
-#             if self.reportTo != None and self.data != None:
-#                 self.transfer(self.reportTo, self.data)
-#                 self.data = None
-            
-    def activateMe(self):
-        activate(self, self.execute())
+
 
 
 class Sink(Filter):

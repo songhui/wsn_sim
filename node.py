@@ -5,8 +5,11 @@ class Node(Process):
     """The Node exemplifies a logical node in a WSN. It can accept
     mulitple filters to be added, from multiple queries. It has a notion of
     available computing power, remaining battery power, transmission cost to
-    its parent, incoming data buffer per query, and an outgoing data buffer
+    its parent, 
+    (not yet:) incoming data buffer per query, and an outgoing data buffer
     per query
+    A node receive data immediately without cost, but send data with a cost, 
+    on both time and energy. Data are sent one by one, based on a token 
     """
     def __init__(self, name,
                  computing_ability=config.COMPUTATIONAL_POWER,
@@ -65,15 +68,24 @@ class Node(Process):
     def activateMe(self):
         activate(self, self.execute())
 
+    # End of class Node
         
 class FireNodeEvent(SimEvent):
-    
+    '''
+    A special event for a node to listen to data arriving.
+    '''
+        
     def __init__(self, name):
         SimEvent.__init__(self, name)
         self.fromFilter = None
         self.data = None
         
+        
+        
 class SensorSource(Process):
+    '''
+    Generating data and put them to the host Node (the node is the actual sensor)
+    '''
     
     def __init__(self, host = None, interval = 1):
         Process.__init__(self)
@@ -91,7 +103,17 @@ class SensorSource(Process):
     def activateMe(self):
         activate(self,self.collectData())
 
+    # End of SensorSource
+    
 class Transferer(Process):
+    '''
+    A transferer is in charge of one shot of data transfer from 
+    one node to another. When a node wants to transfer a data, it
+    get a new (actually idle) transferer, and ask it to do the 
+    transfer for it (after asking, the node immediately goes back
+    to listen to new incoming data)
+    '''
+    
     number = 0
     def __init__(self):
         Process.__init__(self)
